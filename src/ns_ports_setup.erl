@@ -212,6 +212,18 @@ per_bucket_moxi_specs(Config) ->
 
 do_per_bucket_moxi_specs(Config) ->
     BucketConfigs = ns_bucket:get_buckets(Config),
+    DownstreamMax = misc:get_env_default(ns_server, moxi_downstream_max, 1024),
+    DownstreamConnMax = misc:get_env_default(ns_server, moxi_downstream_conn_max, 4),
+    ConnectMaxErrors =  misc:get_env_default(ns_server, moxi_connect_max_errors, 5),
+    ConnectRetryInterval =  misc:get_env_default(ns_server, moxi_connect_retry_interval, 30000),
+    ConnectTimeout =  misc:get_env_default(ns_server, moxi_connect_timeout, 400),
+    AuthTimeout =  misc:get_env_default(ns_server, moxi_auth_timeout, 100),
+    Cycle =  misc:get_env_default(ns_server, moxi_cycle, 200),
+    DownstreamConnQueueTimeout = misc:get_env_default(ns_server, moxi_downstream_conn_queue_timeout, 200),
+    DownstreamTimeout =  misc:get_env_default(ns_server, moxi_downstream_timeout, 5000),
+    WaitQueueTimeout =  misc:get_env_default(ns_server, moxi_wait_queue_timeout, 200),
+    LogFile =  misc:get_env_default(ns_server, moxi_logfile, "moxi.log"),
+    {ok, LogDir} = application:get_env(ns_server, error_logger_mf_dir),
     RestPort = ns_config:search_node_prop(Config, rest, port),
     Command = path_config:component_path(bin, "moxi"),
     lists:foldl(
@@ -231,15 +243,17 @@ do_per_bucket_moxi_specs(Config) ->
                       BigZ =
                           lists:flatten(
                             io_lib:format(
-                              "port_listen=~B,downstream_max=1024,downstream_conn_max=4,"
-                              "connect_max_errors=5,connect_retry_interval=30000,"
-                              "connect_timeout=400,"
-                              "auth_timeout=100,cycle=200,"
-                              "downstream_conn_queue_timeout=200,"
-                              "downstream_timeout=5000,wait_queue_timeout=200",
-                              [Port])),
+                              "port_listen=~B,downstream_max=~B,downstream_conn_max=~B,"
+                              "connect_max_errors=~B,connect_retry_interval=~B,"
+                              "connect_timeout=~B,"
+                              "auth_timeout=~B,cycle=~B,"
+                              "downstream_conn_queue_timeout=~B,"
+                              "downstream_timeout=~B,wait_queue_timeout=~B",
+                              [Port, DownstreamMax, DownstreamConnMax, ConnectMaxErrors,
+				ConnectRetryInterval, ConnectTimeout, AuthTimeout,
+				Cycle, DownstreamConnQueueTimeout, DownstreamTimeout, WaitQueueTimeout])),
                       Args = ["-B", "auto", "-z", LittleZ, "-Z", BigZ,
-                              "-p", "0", "-Y", "y", "-O", "stderr"],
+                              "-p", "0", "-Y", "y", "-O", LogDir ++ "/" ++ LogFile],
                       Passwd = proplists:get_value(sasl_password, BucketConfig,
                                                    ""),
                       Opts = [use_stdio, stderr_to_stdout,
@@ -535,19 +549,37 @@ moxi_spec(Config) ->
     end.
 
 do_moxi_spec(Config) ->
+    DownstreamMax = misc:get_env_default(ns_server, moxi_downstream_max, 1024),
+    DownstreamConnMax = misc:get_env_default(ns_server, moxi_downstream_conn_max, 4),
+    ConnectMaxErrors =  misc:get_env_default(ns_server, moxi_connect_max_errors, 5),
+    ConnectRetryInterval =  misc:get_env_default(ns_server, moxi_connect_retry_interval, 30000),
+    ConnectTimeout =  misc:get_env_default(ns_server, moxi_connect_timeout, 400),
+    AuthTimeout =  misc:get_env_default(ns_server, moxi_auth_timeout, 100),
+    Cycle =  misc:get_env_default(ns_server, moxi_cycle, 200),
+    DownstreamConnQueueTimeout = misc:get_env_default(ns_server, moxi_downstream_conn_queue_timeout, 200),
+    DownstreamTimeout =  misc:get_env_default(ns_server, moxi_downstream_timeout, 5000),
+    WaitQueueTimeout =  misc:get_env_default(ns_server, moxi_wait_queue_timeout, 200),
+    LogFile =  misc:get_env_default(ns_server, moxi_logfile, "moxi.log"),
+    {ok, LogDir} = application:get_env(ns_server, error_logger_mf_dir),
     Spec = {moxi, path_config:component_path(bin, "moxi"),
-            ["-Z", {"port_listen=~B,default_bucket_name=default,downstream_max=1024,downstream_conn_max=4,"
-                    "connect_max_errors=5,connect_retry_interval=30000,"
-                    "connect_timeout=400,"
-                    "auth_timeout=100,cycle=200,"
-                    "downstream_conn_queue_timeout=200,"
-                    "downstream_timeout=5000,wait_queue_timeout=200",
+            ["-Z", {"port_listen=~B,"
+                    "default_bucket_name=default,"
+                    "downstream_max=" ++ integer_to_list(DownstreamMax) ++ ","
+                    "downstream_conn_max=" ++ integer_to_list(DownstreamConnMax) ++ ","
+                    "connect_max_errors=" ++ integer_to_list(ConnectMaxErrors) ++ ","
+                    "connect_retry_interval=" ++ integer_to_list(ConnectRetryInterval) ++ ","
+                    "connect_timeout=" ++ integer_to_list(ConnectTimeout) ++ ","
+                    "auth_timeout=" ++ integer_to_list(AuthTimeout) ++ ","
+                    "cycle=" ++ integer_to_list(Cycle) ++ ","
+                    "downstream_conn_queue_timeout=" ++ integer_to_list(DownstreamConnQueueTimeout) ++ ","
+                    "downstream_timeout=" ++ integer_to_list(DownstreamTimeout) ++ ","
+                    "wait_queue_timeout=" ++ integer_to_list(WaitQueueTimeout),
                     [port]},
              "-z", {"url=http://127.0.0.1:~B/pools/default/saslBucketsStreaming",
                     [{misc, this_node_rest_port, []}]},
              "-p", "0",
              "-Y", "y",
-             "-O", "stderr",
+             "-O", LogDir ++ "/" ++ LogFile,
              {"~s", [verbosity]}
             ],
             [{env, [{"EVENT_NOSELECT", "1"},

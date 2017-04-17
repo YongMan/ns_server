@@ -36,3 +36,15 @@
               {num_files, 5}]}]}.
 
 {net_kernel_verbosity, 10}.
+
+{moxi_downstream_max, 1024}.
+{moxi_downstream_conn_max, 4}.
+{moxi_connect_max_errors, 5}.
+{moxi_connect_retry_interval, 30000}.
+{moxi_connect_timeout, 400}.
+{moxi_auth_timeout, 100}.
+{moxi_cycle, 200}.
+{moxi_downstream_conn_queue_timeout, 200}.
+{moxi_downstream_timeout, 5000}.
+{moxi_wait_queue_timeout, 200}.
+{moxi_log_file, "moxi.log"}.
