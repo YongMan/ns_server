@@ -253,7 +253,7 @@ do_per_bucket_moxi_specs(Config) ->
 				ConnectRetryInterval, ConnectTimeout, AuthTimeout,
 				Cycle, DownstreamConnQueueTimeout, DownstreamTimeout, WaitQueueTimeout])),
                       Args = ["-B", "auto", "-z", LittleZ, "-Z", BigZ,
-                              "-p", "0", "-Y", "y", "-O", LogDir ++ "/" ++ LogFile],
+                              "-p", "0", "-Y", "y", "-O", LogDir ++ "/" ++ LogFile, "-v"],
                       Passwd = proplists:get_value(sasl_password, BucketConfig,
                                                    ""),
                       Opts = [use_stdio, stderr_to_stdout,
@@ -580,6 +580,7 @@ do_moxi_spec(Config) ->
              "-p", "0",
              "-Y", "y",
              "-O", LogDir ++ "/" ++ LogFile,
+             "-v",
              {"~s", [verbosity]}
             ],
             [{env, [{"EVENT_NOSELECT", "1"},
